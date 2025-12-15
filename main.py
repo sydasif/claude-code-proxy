@@ -1,16 +1,34 @@
+import json
 import os
 import subprocess
 import sys
 
-from dotenv import load_dotenv
 
-# 1. Load environment variables
-load_dotenv()
+# 1. Get API key only from oauth_creds.json
+def get_api_key():
+    # Read from ~/.qwen/oauth_creds.json
+    oauth_file = os.path.expanduser("~/.qwen/oauth_creds.json")
+    if os.path.exists(oauth_file):
+        try:
+            with open(oauth_file) as f:
+                creds = json.load(f)
+                return creds.get('access_token')
+        except Exception as e:
+            print(f"Error reading oauth file: {e}")
+            return None
+
+    print("Error: ~/.qwen/oauth_creds.json file not found")
+    return None
+
 
 # 2. Check if key exists
-if not os.getenv("QWEN_API_KEY"):
-    print("Error: QWEN_API_KEY not found in .env file")
+api_key = get_api_key()
+if not api_key:
+    print("Error: QWEN_API_KEY not found in ~/.qwen/oauth_creds.json")
     sys.exit(1)
+
+# Set the API key in the environment for litellm to use
+os.environ["QWEN_API_KEY"] = api_key
 
 # 3. Command to run LiteLLM Proxy
 # Using subprocess for better security and control

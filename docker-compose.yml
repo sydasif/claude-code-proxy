@@ -1,0 +1,12 @@
+services:
+  qwen-proxy:
+    build: .
+    container_name: qwen-proxy
+    ports:
+      - "3455:3455"
+    # Mount the oauth_creds.json file to access oauth credentials
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ~/.qwen/oauth_creds.json:/root/.qwen/oauth_creds.json:ro
+    # This makes it auto-restart if it crashes or when you reboot
+    restart: unless-stopped
