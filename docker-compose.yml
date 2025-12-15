@@ -4,9 +4,15 @@ services:
     container_name: qwen-proxy
     ports:
       - "3455:3455"
-    # Mount the oauth_creds.json file to access oauth credentials
     volumes:
+      # 1. Mount config
       - ./config.yaml:/app/config.yaml
-      - ~/.qwen/oauth_creds.json:/root/.qwen/oauth_creds.json:ro
-    # This makes it auto-restart if it crashes or when you reboot
+
+      # 2. Mount the entire Qwen folder to /app/secrets (Safer than file mounting)
+      - ~/.qwen:/app/secrets:ro
+
+    # 3. Environment variable to tell Python where to look
+    environment:
+      - QWEN_CREDS_PATH=/app/secrets/oauth_creds.json
+
     restart: unless-stopped

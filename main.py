@@ -2,45 +2,52 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 
-# 1. Get API key only from oauth_creds.json
 def get_api_key():
-    # Read from ~/.qwen/oauth_creds.json
-    oauth_file = os.path.expanduser("~/.qwen/oauth_creds.json")
-    if os.path.exists(oauth_file):
+    # 1. Check for the path passed via Docker Environment variables
+    # Default to local home dir if running outside Docker
+    default_path = Path.expanduser(Path("~/.qwen/oauth_creds.json"))
+    oauth_file = Path(os.environ.get("QWEN_CREDS_PATH", str(default_path)))
+
+    print(f"🔍 Looking for credentials at: {oauth_file}")
+
+    if oauth_file.exists():
         try:
-            with open(oauth_file) as f:
+            with oauth_file.open() as f:
                 creds = json.load(f)
-                return creds.get('access_token')
+                token = creds.get('access_token')
+                if token:
+                    return token
+                print("Error: 'access_token' is missing in the JSON file.")
         except Exception as e:
             print(f"Error reading oauth file: {e}")
-            return None
+    else:
+        print(f"Error: Credentials file not found at {oauth_file}")
 
-    print("Error: ~/.qwen/oauth_creds.json file not found")
     return None
 
 
-# 2. Check if key exists
+# 2. Extract Key
 api_key = get_api_key()
 if not api_key:
-    print("Error: QWEN_API_KEY not found in ~/.qwen/oauth_creds.json")
     sys.exit(1)
 
-# Set the API key in the environment for litellm to use
-os.environ["QWEN_API_KEY"] = api_key
+# 3. Prepare Environment for LiteLLM
+# We copy the current environment and add the key
+current_env = os.environ.copy()
+current_env["QWEN_API_KEY"] = api_key
 
-# 3. Command to run LiteLLM Proxy
-# Using subprocess for better security and control
+# 4. Command to run LiteLLM Proxy
 cmd = ["litellm", "--config", "config.yaml", "--port", "3455"]
-# cmd = ["litellm", "--config", "config.yaml", "--port", "3455", "--detailed_debug"]
 
-print("🚀 Starting Qwen Proxy on http://127.0.0.1:3455")
-print("🔗 Target: portal.qwen.ai (Model: qwen3-coder-plus)")
+print("🚀 Starting Qwen Proxy on http://0.0.0.0:3455")
 
 try:
-    # Safe to use subprocess.run as cmd is hardcoded with no user input
-    subprocess.run(cmd, check=True)  # noqa: S603
+    # We pass 'env=current_env' explicitly
+    # The command is hardcoded and doesn't accept untrusted input
+    result = subprocess.run(cmd, check=True, env=current_env)  # noqa: S603
 except subprocess.CalledProcessError as e:
     print(f"Error running LiteLLM proxy: {e}")
     sys.exit(1)
