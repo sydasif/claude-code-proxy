@@ -1,0 +1,10 @@
+model_list:
+  - model_name: "*"
+    litellm_params:
+      model: openai/qwen3-coder-plus
+      api_base: "https://portal.qwen.ai/v1"
+      api_key: os.environ/QWEN_API_KEY
+
+litellm_settings:
+  drop_params: true
+  master_key: "sk-local-proxy-key"
