@@ -10,6 +10,28 @@ This proxy acts as a translation layer, converting Anthropic API requests into O
 * **Protocol Adaptation:** Automatically handles API differences (strips unsupported parameters like `thinking` blocks using LiteLLM).
 * **Credential Integration:** Securely mounts your existing local Qwen OAuth credentials (`~/.qwen/oauth_creds.json`) into the container.
 * **Dockerized:** Runs in a lightweight Python container with no dependency pollution on your host machine.
+* **API Compatibility:** Handles translation between Anthropic and OpenAI API formats transparently.
+* **Parameter Filtering:** Removes Anthropic-specific parameters that would cause errors with Qwen endpoints.
+
+## 🏗️ Architecture
+
+The Qwen Code Proxy leverages **LiteLLM**, an open-source AI gateway that serves as an OpenAI-compatible proxy server for calling 100+ LLMs through a unified interface. The architecture consists of:
+
+### Core Components
+1. **LiteLLM Proxy Server** - Runs inside a Docker container on port 3455
+2. **API Translation Layer** - Converts between Anthropic and OpenAI API formats
+3. **Credential Manager** - Securely accesses your Qwen OAuth credentials
+4. **Model Router** - Routes all Claude model requests to Qwen3-Coder-Plus
+
+### Request Flow
+```
+Claude CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Portal API → Response Back to CLI
+```
+
+### Technical Details
+- **Model Aliasing**: All model requests (Sonnet, Opus, etc.) are mapped to `qwen3-coder-plus`
+- **Parameter Filtering**: Anthropic-specific parameters like `thinking` and `betas` are automatically dropped
+- **Response Standardization**: Qwen responses are formatted to match Anthropic API responses
 
 ## 📋 Prerequisites
 
@@ -98,6 +120,42 @@ litellm_settings:
 
 The setting `drop_params: true` is critical. The Claude CLI sends Anthropic-specific parameters (like `thinking` or `betas`) that cause errors with standard OpenAI/Qwen endpoints. This setting automatically removes them before forwarding the request.
 
+### Advanced Configuration
+
+For more granular control, you can customize the routing in `config.yaml`:
+
+```yaml
+model_list:
+  - model_name: "claude-3-5-sonnet"
+    litellm_params:
+      model: openai/qwen3-coder-plus
+      api_base: "https://portal.qwen.ai/v1"
+      api_key: os.environ/QWEN_API_KEY
+  - model_name: "claude-opus"
+    litellm_params:
+      model: openai/qwen3-coder-plus
+      api_base: "https://portal.qwen.ai/v1"
+      api_key: os.environ/QWEN_API_KEY
+
+litellm_settings:
+  drop_params: true
+  master_key: "sk-local-proxy-key"
+```
+
+## 🔐 Security
+
+- **Credential Isolation**: Qwen credentials are mounted as read-only volumes into the container
+- **Network Isolation**: The proxy runs locally and only accepts connections from the host
+- **Parameter Sanitization**: Unsupported parameters are filtered out before reaching the Qwen API
+- **Access Control**: Master key authentication ensures only authorized requests are processed
+
+## 🚨 Limitations & Considerations
+
+- **Model Identity**: Claude may report itself as "Claude Opus" due to system prompts injected by the CLI, but responses come from Qwen3-Coder-Plus
+- **Feature Parity**: Some Anthropic-specific features may not be fully supported by Qwen
+- **Rate Limits**: Subject to Qwen Portal's rate limits and usage policies
+- **Offline Access**: Requires internet connectivity to reach Qwen Portal API
+
 ## ❓ FAQ
 
 **Q: Claude says "I am powered by Claude Opus" in the chat.**
@@ -113,6 +171,22 @@ A: Pull the latest changes (if any), then rebuild the container:
 docker compose up -d --build
 ```
 
+**Q: Can I use other Qwen models instead of qwen3-coder-plus?**
+A: Yes, you can modify the `config.yaml` file to route to different Qwen models supported by the portal.
+
+**Q: Why does the proxy need to drop certain parameters?**
+A: Anthropic-specific parameters like `thinking` blocks or `betas` are not supported by the Qwen API and would cause errors if passed through.
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to submit issues, feature requests, or pull requests to improve the proxy functionality.
+
 ## 📄 License
 
 This project is licensed under the MIT License.
+
+## 🙏 Acknowledgments
+
+- [LiteLLM](https://litellm.ai/) for providing the API translation and proxy infrastructure
+- Anthropic for the excellent Claude Code CLI
+- Alibaba Cloud for the Qwen3-Coder-Plus model and API access
