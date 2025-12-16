@@ -9,6 +9,7 @@ The Qwen Code Proxy is a Dockerized middleware that acts as a translation layer 
 ## Architecture
 
 The system consists of:
+
 - **main.py**: Entry point that reads Qwen OAuth credentials and starts the LiteLLM proxy
 - **config.yaml**: LiteLLM configuration that routes all Claude model requests to Qwen3-Coder-Plus
 - **Dockerfile**: Creates a Python container with LiteLLM dependencies
@@ -19,6 +20,7 @@ The request flow: Claude CLI → Local Proxy (port 3455) → LiteLLM Translation
 ## Development Commands
 
 ### Running the Proxy
+
 ```bash
 # Start the proxy service
 docker compose up -d
@@ -31,6 +33,7 @@ docker compose down
 ```
 
 ### Development
+
 ```bash
 # Rebuild and start the proxy service
 docker compose up -d --build
@@ -40,13 +43,17 @@ docker exec -it qwen-proxy bash
 ```
 
 ### Testing
+
 To test the proxy functionality:
+
 1. Start the proxy with `docker compose up -d`
 2. Set environment variables:
+
    ```bash
    export ANTHROPIC_BASE_URL="http://127.0.0.1:3455"
    export ANTHROPIC_API_KEY="sk-local-proxy-key"
    ```
+
 3. Run Claude CLI commands to verify the proxy is working
 
 ## Key Configuration
