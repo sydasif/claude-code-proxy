@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY config.yaml .
+COPY auth.py .
 COPY main.py .
 
 # Expose the port
