@@ -18,10 +18,11 @@ This proxy acts as a translation layer, converting Anthropic API requests into O
 The Qwen Code Proxy leverages **LiteLLM**, an open-source AI gateway that serves as an OpenAI-compatible proxy server for calling 100+ LLMs through a unified interface. The architecture consists of:
 
 ### Core Components
-1. **LiteLLM Proxy Server** - Runs inside a Docker container on port 3455
-2. **API Translation Layer** - Converts between Anthropic and OpenAI API formats
-3. **Credential Manager** - Securely accesses your Qwen OAuth credentials
-4. **Model Router** - Routes all Claude model requests to Qwen3-Coder-Plus
+1. **Python Application Wrapper** - Runs the main.py application that manages the LiteLLM proxy with retry and graceful shutdown mechanisms
+2. **LiteLLM Proxy Server** - Runs inside a Docker container on port 3455
+3. **API Translation Layer** - Converts between Anthropic and OpenAI API formats
+4. **Credential Manager** - Securely accesses your Qwen OAuth credentials with thread-safe caching
+5. **Model Router** - Routes all Claude model requests to Qwen3-Coder-Plus
 
 ### Request Flow
 ```
@@ -32,6 +33,9 @@ Claude CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Portal API �
 - **Model Aliasing**: All model requests (Sonnet, Opus, etc.) are mapped to `qwen3-coder-plus`
 - **Parameter Filtering**: Anthropic-specific parameters like `thinking` and `betas` are automatically dropped
 - **Response Standardization**: Qwen responses are formatted to match Anthropic API responses
+- **Credential Caching**: API keys are cached with file modification monitoring to avoid unnecessary reads
+- **Retry Mechanism**: Automatic retry logic with configurable attempts and delays
+- **Graceful Shutdown**: Signal handling for proper process termination
 
 ## 📋 Prerequisites
 
@@ -49,7 +53,7 @@ Claude CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Portal API �
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/yourusername/qwen-code-proxy.git
+    git clone <repository-url>
     cd qwen-code-proxy
     ```
 
@@ -79,8 +83,6 @@ Run these commands in your terminal before starting Claude:
 
 ```bash
 export ANTHROPIC_BASE_URL="http://127.0.0.1:3455"
-export ANTHROPIC_API_KEY="sk-local-proxy-key"
-claude
 ```
 
 ### Option 2: Permanent Alias (Recommended)
@@ -90,14 +92,21 @@ Add to your shell configuration (`~/.bashrc` or `~/.zshrc`) to easily toggle bet
 ```bash
 # Add to .bashrc or .zshrc
 export ANTHROPIC_BASE_URL="http://127.0.0.1:3455"
-export ANTHROPIC_API_KEY="sk-local-proxy-key"
 ```
 
 Now, simply type `claude` to start a session using the Qwen backend.
 
 ## ⚙️ Configuration
 
-The routing logic is defined in `config.yaml`.
+The routing logic is defined in `config.yaml`, while application settings can be configured through environment variables.
+
+### Application Settings (Environment Variables)
+The following environment variables can be used to configure the proxy application:
+
+- `QWEN_CREDS_PATH` - Path to the Qwen credentials file (default: `~/.qwen/oauth_creds.json`)
+- `QWEN_LOG_LEVEL` - Logging level (default: `INFO`)
+- `QWEN_MAX_RETRIES` - Maximum number of retry attempts (default: `3`)
+- `QWEN_RETRY_DELAY` - Delay between retries in seconds (default: `5.0`)
 
 ### Default Routing
 
@@ -113,34 +122,11 @@ model_list:
 
 litellm_settings:
   drop_params: true  # Essential for API compatibility
-  master_key: "sk-local-proxy-key"
 ```
 
 ### Parameter Dropping
 
 The setting `drop_params: true` is critical. The Claude CLI sends Anthropic-specific parameters (like `thinking` or `betas`) that cause errors with standard OpenAI/Qwen endpoints. This setting automatically removes them before forwarding the request.
-
-### Advanced Configuration
-
-For more granular control, you can customize the routing in `config.yaml`:
-
-```yaml
-model_list:
-  - model_name: "claude-3-5-sonnet"
-    litellm_params:
-      model: openai/qwen3-coder-plus
-      api_base: "https://portal.qwen.ai/v1"
-      api_key: os.environ/QWEN_API_KEY
-  - model_name: "claude-opus"
-    litellm_params:
-      model: openai/qwen3-coder-plus
-      api_base: "https://portal.qwen.ai/v1"
-      api_key: os.environ/QWEN_API_KEY
-
-litellm_settings:
-  drop_params: true
-  master_key: "sk-local-proxy-key"
-```
 
 ## 🔐 Security
 
@@ -155,6 +141,23 @@ litellm_settings:
 - **Feature Parity**: Some Anthropic-specific features may not be fully supported by Qwen
 - **Rate Limits**: Subject to Qwen Portal's rate limits and usage policies
 - **Offline Access**: Requires internet connectivity to reach Qwen Portal API
+
+## 🛠️ Development
+
+For development purposes, you can run the proxy directly without Docker:
+
+```bash
+# Install dependencies with uv
+uv sync
+
+# Run the proxy directly with Python
+uv run python main.py
+
+# Run with custom configuration via environment variables
+QWEN_LOG_LEVEL=DEBUG uv run python main.py
+```
+
+This approach is useful for debugging and development, bypassing the Docker container for faster iteration cycles.
 
 ## ❓ FAQ
 
@@ -171,11 +174,16 @@ A: Pull the latest changes (if any), then rebuild the container:
 docker compose up -d --build
 ```
 
-**Q: Can I use other Qwen models instead of qwen3-coder-plus?**
-A: Yes, you can modify the `config.yaml` file to route to different Qwen models supported by the portal.
-
 **Q: Why does the proxy need to drop certain parameters?**
 A: Anthropic-specific parameters like `thinking` blocks or `betas` are not supported by the Qwen API and would cause errors if passed through.
+
+**Q: I'm getting API errors or authentication issues, how can I refresh my token?**
+A: If you encounter API errors, try refreshing your token by navigating to the project folder and running:
+```bash
+cd /path/to/qwen-code-proxy  # Navigate to project directory
+qwen "Hello" && docker compose restart
+```
+This will restart the proxy container and refresh the token from your credentials file. The proxy monitors the credentials file for changes and will automatically pick up updated tokens.
 
 ## 🤝 Contributing
 
