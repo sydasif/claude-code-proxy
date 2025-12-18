@@ -18,6 +18,7 @@ This proxy acts as a translation layer, converting Anthropic API requests into O
 The Qwen Code Proxy leverages **LiteLLM**, an open-source AI gateway that serves as an OpenAI-compatible proxy server for calling 100+ LLMs through a unified interface. The architecture consists of:
 
 ### Core Components
+
 1. **Python Application Wrapper** - Runs the main.py application that manages the LiteLLM proxy with retry and graceful shutdown mechanisms
 2. **LiteLLM Proxy Server** - Runs inside a Docker container on port 3455
 3. **API Translation Layer** - Converts between Anthropic and OpenAI API formats
@@ -25,22 +26,25 @@ The Qwen Code Proxy leverages **LiteLLM**, an open-source AI gateway that serves
 5. **Model Router** - Routes all Claude model requests to Qwen3-Coder-Plus
 
 ### Request Flow
+
 ```
 Claude CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Portal API → Response Back to CLI
 ```
 
 ### Technical Details
-- **Model Aliasing**: All model requests (Sonnet, Opus, etc.) are mapped to `qwen3-coder-plus`
-- **Parameter Filtering**: Anthropic-specific parameters like `thinking` and `betas` are automatically dropped
-- **Response Standardization**: Qwen responses are formatted to match Anthropic API responses
-- **Credential Caching**: API keys are cached with file modification monitoring to avoid unnecessary reads
-- **Retry Mechanism**: Automatic retry logic with configurable attempts and delays
-- **Graceful Shutdown**: Signal handling for proper process termination
+
+* **Model Aliasing**: All model requests (Sonnet, Opus, etc.) are mapped to `qwen3-coder-plus`
+
+* **Parameter Filtering**: Anthropic-specific parameters like `thinking` and `betas` are automatically dropped
+* **Response Standardization**: Qwen responses are formatted to match Anthropic API responses
+* **Credential Caching**: API keys are cached with file modification monitoring to avoid unnecessary reads
+* **Retry Mechanism**: Automatic retry logic with configurable attempts and delays
+* **Graceful Shutdown**: Signal handling for proper process termination
 
 ## 📋 Prerequisites
 
 1. **Docker & Docker Compose**: Installed and running.
-2. **Claude Code CLI**: Installed on your host machine.
+2. **Claude Code CLI**: Installed on your host machine (Claude Console Auth).
 
     ```bash
     npm install -g @anthropic-ai/claude-code
@@ -101,12 +105,13 @@ Now, simply type `claude` to start a session using the Qwen backend.
 The routing logic is defined in `config.yaml`, while application settings can be configured through environment variables.
 
 ### Application Settings (Environment Variables)
+
 The following environment variables can be used to configure the proxy application:
 
-- `QWEN_CREDS_PATH` - Path to the Qwen credentials file (default: `~/.qwen/oauth_creds.json`)
-- `QWEN_LOG_LEVEL` - Logging level (default: `INFO`)
-- `QWEN_MAX_RETRIES` - Maximum number of retry attempts (default: `3`)
-- `QWEN_RETRY_DELAY` - Delay between retries in seconds (default: `5.0`)
+* `QWEN_CREDS_PATH` - Path to the Qwen credentials file (default: `~/.qwen/oauth_creds.json`)
+* `QWEN_LOG_LEVEL` - Logging level (default: `INFO`)
+* `QWEN_MAX_RETRIES` - Maximum number of retry attempts (default: `3`)
+* `QWEN_RETRY_DELAY` - Delay between retries in seconds (default: `5.0`)
 
 ### Default Routing
 
@@ -130,17 +135,17 @@ The setting `drop_params: true` is critical. The Claude CLI sends Anthropic-spec
 
 ## 🔐 Security
 
-- **Credential Isolation**: Qwen credentials are mounted as read-only volumes into the container
-- **Network Isolation**: The proxy runs locally and only accepts connections from the host
-- **Parameter Sanitization**: Unsupported parameters are filtered out before reaching the Qwen API
-- **Access Control**: Master key authentication ensures only authorized requests are processed
+* **Credential Isolation**: Qwen credentials are mounted as read-only volumes into the container
+* **Network Isolation**: The proxy runs locally and only accepts connections from the host
+* **Parameter Sanitization**: Unsupported parameters are filtered out before reaching the Qwen API
+* **Access Control**: Master key authentication ensures only authorized requests are processed
 
 ## 🚨 Limitations & Considerations
 
-- **Model Identity**: Claude may report itself as "Claude Opus" due to system prompts injected by the CLI, but responses come from Qwen3-Coder-Plus
-- **Feature Parity**: Some Anthropic-specific features may not be fully supported by Qwen
-- **Rate Limits**: Subject to Qwen Portal's rate limits and usage policies
-- **Offline Access**: Requires internet connectivity to reach Qwen Portal API
+* **Model Identity**: Claude may report itself as "Claude Opus" due to system prompts injected by the CLI, but responses come from Qwen3-Coder-Plus
+* **Feature Parity**: Some Anthropic-specific features may not be fully supported by Qwen
+* **Rate Limits**: Subject to Qwen Portal's rate limits and usage policies
+* **Offline Access**: Requires internet connectivity to reach Qwen Portal API
 
 ## 🛠️ Development
 
@@ -161,28 +166,30 @@ This approach is useful for debugging and development, bypassing the Docker cont
 
 ## ❓ FAQ
 
-**Q: Claude says "I am powered by Claude Opus" in the chat.**
-A: The Claude CLI injects a system prompt instructing the model to identify itself as Claude. Since Qwen3-Coder-Plus is highly capable of following instructions, it adheres to this persona. You are still using the Qwen backend.
+* **Q: Claude says "I am powered by Claude Opus" in the chat.**
+* A: The Claude CLI injects a system prompt instructing the model to identify itself as Claude. Since Qwen3-Coder-Plus is highly capable of following instructions, it adheres to this persona. You are still using the Qwen backend.
 
-**Q: How do I view the server logs?**
-A: Run `docker compose logs -f qwen-proxy`. This is useful for debugging connection issues or verifying that requests are hitting the Qwen API.
+* **Q: How do I view the server logs?**
+* A: Run `docker compose logs -f qwen-proxy`. This is useful for debugging connection issues or verifying that requests are hitting the Qwen API.
 
-**Q: How do I update the project?**
-A: Pull the latest changes (if any), then rebuild the container:
+* **Q: How do I update the project?**
+* A: Pull the latest changes (if any), then rebuild the container:
 
 ```bash
 docker compose up -d --build
 ```
 
-**Q: Why does the proxy need to drop certain parameters?**
-A: Anthropic-specific parameters like `thinking` blocks or `betas` are not supported by the Qwen API and would cause errors if passed through.
+* **Q: Why does the proxy need to drop certain parameters?**
+* A: Anthropic-specific parameters like `thinking` blocks or `betas` are not supported by the Qwen API and would cause errors if passed through.
 
-**Q: I'm getting API errors or authentication issues, how can I refresh my token?**
-A: If you encounter API errors, try refreshing your token by navigating to the project folder and running:
+* **Q: I'm getting API errors or authentication issues, how can I refresh my token?**
+* A: If you encounter API errors, try refreshing your token by navigating to the project folder and running:
+
 ```bash
 cd /path/to/qwen-code-proxy  # Navigate to project directory
 qwen "Hello" && docker compose restart
 ```
+
 This will restart the proxy container and refresh the token from your credentials file. The proxy monitors the credentials file for changes and will automatically pick up updated tokens.
 
 ## 🤝 Contributing
@@ -195,6 +202,6 @@ This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- [LiteLLM](https://litellm.ai/) for providing the API translation and proxy infrastructure
-- Anthropic for the excellent Claude Code CLI
-- Alibaba Cloud for the Qwen3-Coder-Plus model and API access
+* [LiteLLM](https://litellm.ai/) for providing the API translation and proxy infrastructure
+* Anthropic for the excellent Claude Code CLI
+* Alibaba Cloud for the Qwen3-Coder-Plus model and API access
