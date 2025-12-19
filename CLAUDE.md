@@ -70,13 +70,14 @@ uv run litellm --config config.yaml --port 3455 --host 0.0.0.0
 
 ## Key Configuration
 
-The proxy uses a wildcard routing strategy in `config.yaml` where any model requested by Claude CLI is routed to `qwen3-coder-plus`. The `drop_params: true` setting is critical as it removes Anthropic-specific parameters (like `thinking` or `betas`) that would cause errors with OpenAI/Qwen endpoints.
+The proxy explicitly maps specific Claude models (sonnet, opus, haiku) to `qwen3-coder-plus` in `config.yaml`. The `drop_params: true` setting is critical as it removes Anthropic-specific parameters (like `thinking` or `betas`) that would cause errors with OpenAI/Qwen endpoints.
 
-Credentials are securely accessed from `~/.qwen/oauth_creds.json` with thread-safe caching implemented in `auth.py`.
+Credentials are securely accessed from `~/.qwen/oauth_creds.json` with thread-safe caching implemented in `auth.py`. The application includes retry logic with configurable maximum attempts and delay between retries, as well as graceful shutdown handling for clean process termination.
 
 ## Important Notes
 
 - The proxy drops Anthropic-specific parameters to maintain compatibility with Qwen APIs
 - Credentials are mounted as read-only volumes in the Docker container for security
-- The proxy supports graceful shutdown and retry mechanisms
+- The proxy supports graceful shutdown and retry mechanisms with configurable attempts and delays
 - All Claude model requests (Sonnet, Opus, etc.) are mapped to `qwen3-coder-plus`
+- Configuration settings can be customized via environment variables prefixed with `QWEN_`

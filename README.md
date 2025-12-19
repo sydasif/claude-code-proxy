@@ -115,11 +115,23 @@ The following environment variables can be used to configure the proxy applicati
 
 ### Default Routing
 
-By default, the proxy uses a wildcard (`*`) strategy. This means **any** model requested by the Claude CLI (whether it asks for `claude-3-5-sonnet` or `claude-opus`) will be routed to `qwen3-coder-plus`.
+By default, the proxy explicitly maps specific Claude models to `qwen3-coder-plus`. This means **any** model requested by the Claude CLI (whether it asks for `claude-3-5-sonnet` or `claude-opus`) will be routed to `qwen3-coder-plus`.
 
 ```yaml
 model_list:
-  - model_name: "*"
+  - model_name: claude-sonnet-4-5-20250929
+    litellm_params:
+      model: openai/qwen3-coder-plus
+      api_base: "https://portal.qwen.ai/v1"
+      api_key: os.environ/QWEN_API_KEY
+
+  - model_name: claude-opus-4-5-20251101
+    litellm_params:
+      model: openai/qwen3-coder-plus
+      api_base: "https://portal.qwen.ai/v1"
+      api_key: os.environ/QWEN_API_KEY
+
+  - model_name: claude-haiku-4-5-20251001
     litellm_params:
       model: openai/qwen3-coder-plus
       api_base: "https://portal.qwen.ai/v1"
@@ -127,6 +139,7 @@ model_list:
 
 litellm_settings:
   drop_params: true  # Essential for API compatibility
+  request_timeout: 120
 ```
 
 ### Parameter Dropping
@@ -190,7 +203,7 @@ cd /path/to/qwen-code-proxy  # Navigate to project directory
 qwen "Hello" && docker compose restart
 ```
 
-This will restart the proxy container and refresh the token from your credentials file. The proxy monitors the credentials file for changes and will automatically pick up updated tokens.
+This will restart the proxy container and refresh the token from your credentials file. The proxy implements thread-safe caching with file modification monitoring, automatically picking up updated tokens when the credentials file changes.
 
 ## 🤝 Contributing
 
