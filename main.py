@@ -1,10 +1,9 @@
+import logging
 import os
+import signal
 import subprocess
 import sys
-import signal
-import logging
 import time
-from typing import Optional
 
 from auth import get_api_key
 from config import get_settings
@@ -15,10 +14,8 @@ def setup_logging(log_level: str = "INFO"):
     numeric_level = getattr(logging, log_level.upper(), logging.INFO)
     logging.basicConfig(
         level=numeric_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(sys.stdout)
-        ]
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
 
 
@@ -48,20 +45,22 @@ class ProxyRunner:
         # 3. Command to run LiteLLM Proxy
         cmd = [
             "litellm",
-            "--config", self.settings.config_file,
-            "--port", str(self.settings.port),
-            "--host", self.settings.host
+            "--config",
+            self.settings.config_file,
+            "--port",
+            str(self.settings.port),
+            "--host",
+            self.settings.host,
         ]
 
-        logging.info(f"🚀 Starting Qwen Proxy on {self.settings.host}:{self.settings.port}")
+        logging.info(
+            f"🚀 Starting Qwen Proxy on {self.settings.host}:{self.settings.port}"
+        )
 
         try:
             # Using Popen for better control over the process
             self.process = subprocess.Popen(
-                cmd,
-                env=current_env,
-                stdout=sys.stdout,
-                stderr=sys.stderr
+                cmd, env=current_env, stdout=sys.stdout, stderr=sys.stderr
             )
             self.running = True
 
@@ -85,7 +84,9 @@ class ProxyRunner:
             if self.process and self.process.poll() is None:
                 self.process.terminate()
                 try:
-                    self.process.wait(timeout=5)  # Wait up to 5 seconds for graceful termination
+                    self.process.wait(
+                        timeout=5
+                    )  # Wait up to 5 seconds for graceful termination
                 except subprocess.TimeoutExpired:
                     logging.warning("Process did not terminate gracefully, killing it")
                     self.process.kill()
@@ -97,7 +98,9 @@ class ProxyRunner:
         if self.process and self.process.poll() is None:
             self.process.terminate()
             try:
-                self.process.wait(timeout=5)  # Wait up to 5 seconds for graceful termination
+                self.process.wait(
+                    timeout=5
+                )  # Wait up to 5 seconds for graceful termination
             except subprocess.TimeoutExpired:
                 logging.warning("Process did not terminate gracefully, killing it")
                 self.process.kill()
@@ -114,18 +117,26 @@ class ProxyRunner:
                     # Normal exit
                     return
                 elif attempt < self.settings.max_retries:
-                    logging.warning(f"Proxy failed, attempt {attempt + 1}/{self.settings.max_retries}. Retrying in {self.settings.retry_delay}s...")
+                    logging.warning(
+                        f"Proxy failed, attempt {attempt + 1}/{self.settings.max_retries}. Retrying in {self.settings.retry_delay}s..."
+                    )
                     time.sleep(self.settings.retry_delay)
                 else:
-                    logging.error(f"Proxy failed after {self.settings.max_retries} retries")
+                    logging.error(
+                        f"Proxy failed after {self.settings.max_retries} retries"
+                    )
                     raise
             except Exception as e:
                 # Handle other exceptions that might occur during proxy run
                 if attempt < self.settings.max_retries:
-                    logging.warning(f"Proxy failed with error: {e}, attempt {attempt + 1}/{self.settings.max_retries}. Retrying in {self.settings.retry_delay}s...")
+                    logging.warning(
+                        f"Proxy failed with error: {e}, attempt {attempt + 1}/{self.settings.max_retries}. Retrying in {self.settings.retry_delay}s..."
+                    )
                     time.sleep(self.settings.retry_delay)
                 else:
-                    logging.error(f"Proxy failed after {self.settings.max_retries} retries: {e}")
+                    logging.error(
+                        f"Proxy failed after {self.settings.max_retries} retries: {e}"
+                    )
                     raise
 
 

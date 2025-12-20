@@ -1,11 +1,8 @@
 import json
-import os
-import time
-from pathlib import Path
 import logging
-from typing import Optional
+import os
 import threading
-
+from pathlib import Path
 
 # Global cache for the API key
 _cached_token = None
@@ -13,7 +10,7 @@ _last_modified_time = 0
 _cache_lock = threading.Lock()
 
 
-def get_api_key() -> Optional[str]:
+def get_api_key() -> str | None:
     """
     Retrieve the API key from the credentials file with thread-safe caching.
     Returns the cached token if file hasn't changed, otherwise reads the file.
@@ -36,15 +33,17 @@ def get_api_key() -> Optional[str]:
         # Check if file has been modified since last read
         try:
             current_modified_time = oauth_file.stat().st_mtime
-            if (_cached_token is not None and
-                current_modified_time <= _last_modified_time):
+            if (
+                _cached_token is not None
+                and current_modified_time <= _last_modified_time
+            ):
                 # Return cached token if file hasn't changed
                 return _cached_token
 
             # File has been modified or token not cached, read it
-            with oauth_file.open('r') as f:
+            with oauth_file.open("r") as f:
                 creds = json.load(f)
-                token = creds.get('access_token')
+                token = creds.get("access_token")
 
                 if not token:
                     logging.error("Error: 'access_token' is missing in the JSON file.")
