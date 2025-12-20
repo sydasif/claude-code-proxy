@@ -43,8 +43,6 @@ docker compose down
 ```bash
 # Set environment variables to use the proxy
 export ANTHROPIC_BASE_URL="http://127.0.0.1:3455"
-export ANTHROPIC_API_KEY="sk-local-proxy-key"
-claude
 ```
 
 ### Building and Testing

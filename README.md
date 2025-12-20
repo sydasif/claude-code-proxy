@@ -1,4 +1,4 @@
-# Qwen Code Proxy
+# Claude Code Proxy
 
 A lightweight, Dockerized middleware that allows you to use the official **[Claude Code CLI](https://github.com/anthropics/claude-code)** with the **Qwen3-Coder-Plus** backend (via Qwen Portal).
 
