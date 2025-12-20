@@ -1,22 +1,38 @@
-# Use lightweight Python
-FROM python:3.12-slim
+# Multi-stage build
+# Stage 1: Install dependencies with uv
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim as builder
 
-# Set working directory
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
 
-# Copy application files
-COPY config.yaml .
-COPY auth.py .
-COPY config.py .
-COPY main.py .
+# Install dependencies with uv
+RUN uv sync --locked --no-dev --compile-bytecode
+
+# Stage 2: Runtime
+FROM python:3.12-slim
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app
+
+WORKDIR /app
+
+# Copy virtual environment from builder stage
+COPY --from=builder --chown=app:app /app/.venv ./.venv
+
+# Activate virtual environment
+ENV VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:$PATH"
+
+# Copy all application files using .dockerignore to exclude unnecessary files
+COPY --chown=app:app . .
+
+# Switch to non-root user
+USER app
 
 # Expose the port
 EXPOSE 3455
 
 # Run the proxy
-# We use 'python -u' to unbuffer output so logs show up instantly
-CMD ["python", "-u", "main.py"]
+CMD ["python", "main.py"]

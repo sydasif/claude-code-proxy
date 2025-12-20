@@ -49,7 +49,7 @@ claude
 
 ### Building and Testing
 ```bash
-# Rebuild the container after changes
+# Rebuild the container after changes (uses uv for dependency management)
 docker compose up -d --build
 
 # Run with verbose logging
@@ -62,9 +62,60 @@ uv run python main.py
 uv run litellm --config config.yaml --port 3455 --host 0.0.0.0
 ```
 
+### Docker with uv (Dependency Management)
+The Docker setup now uses uv for dependency management following best practices:
+
+- **Multi-stage build**: Dependencies are installed in a builder stage with uv, then copied to the runtime stage
+- **uv.lock integration**: Dependencies are installed directly from `pyproject.toml` and `uv.lock` (not requirements.txt)
+- **Bytecode compilation**: Enabled for better runtime performance
+- **Security**: Non-root user is used in the container
+- **Optimization**: .dockerignore file excludes unnecessary files during build
+- **Build optimization**: The .dockerignore file prevents unnecessary files (like .git, __pycache__, .venv, logs, etc.) from being copied into the Docker image, reducing build time and image size
+
+```dockerfile
+# Multi-stage build
+# Stage 1: Install dependencies with uv
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim as builder
+
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies with uv
+RUN uv sync --locked --no-dev --compile-bytecode
+
+# Stage 2: Runtime
+FROM python:3.12-slim
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app
+
+WORKDIR /app
+
+# Copy virtual environment from builder stage
+COPY --from=builder --chown=app:app /app/.venv ./.venv
+
+# Activate virtual environment
+ENV VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:$PATH"
+
+# Copy all application files using .dockerignore to exclude unnecessary files
+COPY --chown=app:app . .
+
+# Switch to non-root user
+USER app
+
+# Expose the port
+EXPOSE 3455
+
+# Run the proxy
+CMD ["python", "main.py"]
+```
+
 ### Development Workflow
 1. Make changes to the Python files (main.py, auth.py, config.py)
-2. Rebuild the container: `docker compose up -d --build`
+2. Rebuild the container: `docker compose up -d --build` (uses uv for dependency management)
 3. Restart the proxy: `docker compose restart`
 4. Test with Claude CLI using the proxy endpoint
 
@@ -81,3 +132,4 @@ Credentials are securely accessed from `~/.qwen/oauth_creds.json` with thread-sa
 - The proxy supports graceful shutdown and retry mechanisms with configurable attempts and delays
 - All Claude model requests (Sonnet, Opus, etc.) are mapped to `qwen3-coder-plus`
 - Configuration settings can be customized via environment variables prefixed with `QWEN_`
+- **uv Integration**: The project now uses uv exclusively for dependency management in both development and Docker builds (requirements.txt has been removed in favor of pyproject.toml and uv.lock)
