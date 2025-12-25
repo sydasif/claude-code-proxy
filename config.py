@@ -3,14 +3,26 @@ Configuration management for the Qwen Proxy application.
 Uses Pydantic for validation and type safety.
 """
 
-import os
-from pathlib import Path
-
-from pydantic import BaseModel, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseModel):
-    """Application settings with validation."""
+class Settings(BaseSettings):
+    """Application settings with validation and environment variable support.
+
+    This class defines all configurable parameters for the Qwen Proxy application
+    with proper validation, type hints, and environment variable mapping.
+
+    Attributes:
+        config_file: Path to the LiteLLM configuration file
+        port: Port number for the proxy to listen on (1024-65535)
+        host: Host address for the proxy to bind to
+        creds_path: Optional path to the credentials file
+        api_key_env_var: Environment variable name for storing API key
+        max_retries: Maximum number of retry attempts for proxy operations
+        retry_delay: Delay in seconds between retry attempts
+        log_level: Logging level for the application (DEBUG, INFO, WARNING, ERROR)
+    """
 
     # Proxy settings
     config_file: str = Field(
@@ -19,7 +31,7 @@ class Settings(BaseModel):
     port: int = Field(
         default=3455, ge=1024, le=65535, description="Port for the proxy to listen on"
     )
-    host: str = Field(default="0.0.0.0", description="Host for the proxy to bind to")
+    host: str = Field(default="127.0.0.1", description="Host for the proxy to bind to")
 
     # Authentication settings
     creds_path: str | None = Field(
@@ -40,18 +52,21 @@ class Settings(BaseModel):
     # Logging settings
     log_level: str = Field(default="INFO", description="Logging level")
 
-    class Config:
-        env_prefix = "QWEN_"
-        case_sensitive = False
-        extra = "forbid"
+    model_config = SettingsConfigDict(
+        env_prefix="QWEN_",
+        case_sensitive=False,
+        extra="forbid"
+    )
 
 
 def get_settings() -> Settings:
-    """Get application settings from environment variables and defaults."""
-    # Set default creds path if not provided
-    creds_path = os.environ.get("QWEN_CREDS_PATH")
-    if not creds_path:
-        default_path = Path.expanduser(Path("~/.qwen/oauth_creds.json"))
-        os.environ["QWEN_CREDS_PATH"] = str(default_path)
+    """Get application settings from environment variables and defaults.
 
+    This function creates and returns a Settings instance, automatically
+    loading configuration values from environment variables (prefixed with
+    QWEN_) or using the defined defaults if not provided.
+
+    Returns:
+        Settings: A validated settings instance with all configuration values
+    """
     return Settings()

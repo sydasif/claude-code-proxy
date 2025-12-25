@@ -12,8 +12,9 @@ services:
       # Use $HOME environment variable for better compatibility
       - ${HOME}/.qwen:/app/secrets:ro
 
-    # 3. Environment variable to tell Python where to look
+    # 3. Environment variables to configure the proxy
     environment:
       - QWEN_CREDS_PATH=/app/secrets/oauth_creds.json
+      - QWEN_HOST=0.0.0.0  # Bind to all interfaces in Docker container
 
     restart: unless-stopped

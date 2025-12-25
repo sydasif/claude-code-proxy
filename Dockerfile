@@ -13,8 +13,11 @@ RUN uv sync --locked --no-dev --compile-bytecode
 # Stage 2: Runtime
 FROM python:3.12-slim
 
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash app
+# Install minimal runtime dependencies and create user
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dumb-init \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash --uid 1000 app
 
 WORKDIR /app
 
@@ -23,7 +26,10 @@ COPY --from=builder --chown=app:app /app/.venv ./.venv
 
 # Activate virtual environment
 ENV VIRTUAL_ENV=/app/.venv \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONHASHSEED=random
 
 # Copy all application files using .dockerignore to exclude unnecessary files
 COPY --chown=app:app . .
@@ -34,5 +40,6 @@ USER app
 # Expose the port
 EXPOSE 3455
 
-# Run the proxy
+# Use dumb-init to handle signals properly and run the proxy
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["python", "main.py"]
