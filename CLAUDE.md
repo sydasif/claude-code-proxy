@@ -18,6 +18,7 @@ The proxy leverages LiteLLM as an open-source AI gateway that serves as an OpenA
 Request Flow: `Claude CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Portal API → Response Back to CLI`
 
 Core Files:
+
 - `main.py` - Main application entry point with proxy runner logic
 - `auth.py` - Handles credential retrieval and caching with thread-safe mechanisms
 - `config.py` - Configuration management using Pydantic
@@ -28,6 +29,7 @@ Core Files:
 ## Development Commands
 
 ### Running the Proxy
+
 ```bash
 # Start the proxy in the background using Docker Compose
 docker compose up -d
@@ -40,12 +42,14 @@ docker compose down
 ```
 
 ### Using with Claude Code CLI
+
 ```bash
 # Set environment variables to use the proxy
 export ANTHROPIC_BASE_URL="http://127.0.0.1:3455"
 ```
 
 ### Building and Testing
+
 ```bash
 # Rebuild the container after changes (uses uv for dependency management)
 docker compose up -d --build
@@ -61,6 +65,7 @@ uv run litellm --config config.yaml --port 3455 --host 0.0.0.0
 ```
 
 ### Docker with uv (Dependency Management)
+
 The Docker setup now uses uv for dependency management following best practices:
 
 - **Multi-stage build**: Dependencies are installed in a builder stage with uv, then copied to the runtime stage
@@ -68,7 +73,7 @@ The Docker setup now uses uv for dependency management following best practices:
 - **Bytecode compilation**: Enabled for better runtime performance
 - **Security**: Non-root user is used in the container
 - **Optimization**: .dockerignore file excludes unnecessary files during build
-- **Build optimization**: The .dockerignore file prevents unnecessary files (like .git, __pycache__, .venv, logs, etc.) from being copied into the Docker image, reducing build time and image size
+- **Build optimization**: The .dockerignore file prevents unnecessary files (like .git, **pycache**, .venv, logs, etc.) from being copied into the Docker image, reducing build time and image size
 
 ```dockerfile
 # Multi-stage build
@@ -112,6 +117,7 @@ CMD ["python", "main.py"]
 ```
 
 ### Development Workflow
+
 1. Make changes to the Python files (main.py, auth.py, config.py)
 2. Rebuild the container: `docker compose up -d --build` (uses uv for dependency management)
 3. Restart the proxy: `docker compose restart`
