@@ -1,5 +1,5 @@
 """
-Configuration management for the Qwen Proxy application.
+Configuration management for the Qwen Code Proxy application.
 Uses Pydantic for validation and type safety.
 """
 
@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings with validation and environment variable support.
 
-    This class defines all configurable parameters for the Qwen Proxy application
+    This class defines all configurable parameters for the Qwen Code Proxy application
     with proper validation, type hints, and environment variable mapping.
 
     Attributes:
