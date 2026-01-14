@@ -1,21 +1,11 @@
 model_list:
-  - model_name: claude-sonnet-4-5-20250929
+  - model_name: claude-*
     litellm_params:
       model: openai/qwen3-coder-plus
       api_base: "https://portal.qwen.ai/v1"
       api_key: os.environ/QWEN_API_KEY
-
-  - model_name: claude-opus-4-5-20251101
-    litellm_params:
-      model: openai/qwen3-coder-plus
-      api_base: "https://portal.qwen.ai/v1"
-      api_key: os.environ/QWEN_API_KEY
-
-  - model_name: claude-haiku-4-5-20251001
-    litellm_params:
-      model: openai/qwen3-coder-plus
-      api_base: "https://portal.qwen.ai/v1"
-      api_key: os.environ/QWEN_API_KEY
+      extra_body:
+        enable_thinking: true
 
 litellm_settings:
   drop_params: true
