@@ -1,17 +1,16 @@
 # Qwen Code Proxy
 
-A lightweight, Dockerized middleware that allows you to use the official **[Claude Code CLI](https://github.com/anthropics/claude-code)** with the **Qwen3-Coder-Plus** backend (via Qwen Portal).
+A lightweight, Dockerized middleware that allows you to use the official **[Claude Code CLI](https://github.com/anthropics/claude-code)** and [Opencode](https://opencode.ai/) with the **Qwen3-Coder-Plus** backend (via Qwen Portal).
 
-This proxy acts as a translation layer, converting Anthropic API requests into OpenAI-compatible requests for the Qwen Portal, allowing you to use the advanced Claude CLI workflow without consuming Anthropic API credits.
+This proxy acts as a translation layer, converting API requests into OpenAI-compatible requests for the Qwen Portal, allowing you to use the advanced CLI workflow.
 
 ## 🚀 Features
 
-* **Model Translation:** Seamlessly routes Claude Code requests (Sonnet, Opus, etc.) to **Qwen3-Coder-Plus**.
+* **Model Translation:** Seamlessly routes to **Qwen3-Coder-Plus**.
 * **Protocol Adaptation:** Automatically handles API differences (strips unsupported parameters like `thinking` blocks using LiteLLM).
 * **Credential Integration:** Securely mounts your existing local Qwen OAuth credentials (`~/.qwen/oauth_creds.json`) into the container.
 * **Dockerized:** Runs in a lightweight Python container with no dependency pollution on your host machine.
 * **API Compatibility:** Handles translation between Anthropic and OpenAI API formats transparently.
-* **Parameter Filtering:** Removes Anthropic-specific parameters that would cause errors with Qwen endpoints.
 
 ## 🏗️ Architecture
 
@@ -27,14 +26,13 @@ The Qwen Code Proxy leverages **LiteLLM**, an open-source AI gateway that serves
 
 ### Request Flow
 
-```
-Claude CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Portal API → Response Back to CLI
+```text
+Claude/Opencode CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Portal API → Response Back to CLI
 ```
 
 ### Technical Details
 
-* **Model Aliasing**: All model requests (Sonnet, Opus, etc.) are mapped to `qwen3-coder-plus`
-
+* **Model Aliasing**: All model requests are mapped to `qwen3-coder-plus`
 * **Parameter Filtering**: Anthropic-specific parameters like `thinking` and `betas` are automatically dropped
 * **Response Standardization**: Qwen responses are formatted to match Anthropic API responses
 * **Credential Caching**: API keys are cached with file modification monitoring to avoid unnecessary reads
@@ -47,7 +45,11 @@ Claude CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Portal API �
 2. **Claude Code CLI**: Installed on your host machine (Claude Console Auth).
 
     ```bash
+    # claued-code CLI installation
     npm install -g @anthropic-ai/claude-code
+
+    # opencode installation
+    npm install -g opencode-ai
     ```
 
 3. **Qwen Credentials**: You must be logged into the Qwen tools on your machine. The proxy expects to find your credentials at `~/.qwen/oauth_creds.json`.
@@ -119,26 +121,26 @@ By default, the proxy explicitly maps specific Claude models to `qwen3-coder-plu
 
 ```yaml
 model_list:
-  - model_name: claude-sonnet-4-5-20250929
+  # for claude code models
+  - model_name: claude-*
     litellm_params:
       model: openai/qwen3-coder-plus
       api_base: "https://portal.qwen.ai/v1"
       api_key: os.environ/QWEN_API_KEY
+      extra_body:
+        enable_thinking: true
 
-  - model_name: claude-opus-4-5-20251101
+  # for opencode models
+  - model_name: openai/qwen3-coder-plus
     litellm_params:
       model: openai/qwen3-coder-plus
       api_base: "https://portal.qwen.ai/v1"
       api_key: os.environ/QWEN_API_KEY
-
-  - model_name: claude-haiku-4-5-20251001
-    litellm_params:
-      model: openai/qwen3-coder-plus
-      api_base: "https://portal.qwen.ai/v1"
-      api_key: os.environ/QWEN_API_KEY
+      extra_body:
+        enable_thinking: true
 
 litellm_settings:
-  drop_params: true  # Essential for API compatibility
+  drop_params: true
   request_timeout: 120
 ```
 
