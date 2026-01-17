@@ -1,40 +1,32 @@
 # Qwen Code Proxy
 
-A lightweight, Dockerized middleware that allows you to use the official **[Claude Code CLI](https://github.com/anthropics/claude-code)** and [Opencode](https://opencode.ai/) with the **Qwen3-Coder-Plus** backend (via Qwen Portal).
-
-This proxy acts as a translation layer, converting API requests into OpenAI-compatible requests for the Qwen Portal, allowing you to use the advanced CLI workflow.
+A lightweight, Dockerized middleware that allows you to use the official **[Claude Code CLI](https://github.com/anthropics/claude-code)** and **[Opencode](https://opencode.ai/)** with the **Qwen3-Coder-Plus** backend by (*Qwen Portal*).
 
 ## 🚀 Features
 
 * **Model Translation:** Seamlessly routes to **Qwen3-Coder-Plus**.
-* **Protocol Adaptation:** Automatically handles API differences (strips unsupported parameters like `thinking` blocks using LiteLLM).
 * **Credential Integration:** Securely mounts your existing local Qwen OAuth credentials (`~/.qwen/oauth_creds.json`) into the container.
 * **Dockerized:** Runs in a lightweight Python container with no dependency pollution on your host machine.
-* **API Compatibility:** Handles translation between Anthropic and OpenAI API formats transparently.
 
 ## 🏗️ Architecture
 
-The Qwen Code Proxy leverages **LiteLLM**, an open-source AI gateway that serves as an OpenAI-compatible proxy server for calling 100+ LLMs through a unified interface. The architecture consists of:
+The Qwen Code Proxy leverages **LiteLLM**, an open-source AI gateway that serves as proxy server for calling 100+ LLMs through a unified interface.
 
 ### Core Components
 
-1. **Python Application Wrapper** - Runs the main.py application that manages the LiteLLM proxy with retry and graceful shutdown mechanisms
-2. **LiteLLM Proxy Server** - Runs inside a Docker container on port 3455
-3. **API Translation Layer** - Converts between Anthropic and OpenAI API formats
-4. **Credential Manager** - Securely accesses your Qwen OAuth credentials with thread-safe caching
-5. **Model Router** - Routes all Claude model requests to Qwen3-Coder-Plus
+1. **Python Application Wrapper** - Runs the `main.py` application that manages the LiteLLM proxy with retry and graceful shutdown mechanisms
+2. **LiteLLM Proxy Server** - Runs inside a Docker container on port `3455`
+3. **Credential Manager** - Securely accesses your Qwen OAuth credentials with thread-safe caching
 
 ### Request Flow
 
-```text
-Claude / Opencode CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Portal API → Response Back to CLI
+```bash
+`claude` /  `opencode` → Local Proxy (`3455`) → LiteLLM Translation → Qwen Portal API → Response Back to CLI
 ```
 
 ### Technical Details
 
-* **Model Aliasing**: All model requests are mapped to `qwen3-coder-plus`
 * **Parameter Filtering**: Anthropic-specific parameters like `thinking` and `betas` are automatically dropped
-* **Response Standardization**: Qwen responses are formatted to match Anthropic API responses
 * **Credential Caching**: API keys are cached with file modification monitoring to avoid unnecessary reads
 * **Retry Mechanism**: Automatic retry logic with configurable attempts and delays
 * **Graceful Shutdown**: Signal handling for proper process termination
@@ -42,17 +34,18 @@ Claude / Opencode CLI → Local Proxy (3455) → LiteLLM Translation → Qwen Po
 ## 📋 Prerequisites
 
 1. **Docker & Docker Compose**: Installed and running.
-2. **Claude Code CLI**: Installed on your host machine (Claude Console Auth).
+2. **Claude Code CLI**: Installed on your host machine (*Claude Console Auth*).
+3. **Opencode CLI**: Installed on your host machine (*Zen Auth*).
 
-    ```bash
-    # claued-code CLI installation
-    npm install -g @anthropic-ai/claude-code
+```bash
+# claued-code CLI installation
+npm install -g @anthropic-ai/claude-code
 
-    # opencode installation
-    npm install -g opencode-ai
-    ```
+# opencode installation
+npm install -g opencode-ai
+```
 
-3. **Qwen Credentials**: You must be logged into the Qwen tools on your machine. The proxy expects to find your credentials at `~/.qwen/oauth_creds.json`.
+**Qwen Credentials**: You must be logged into the Qwen CLI on your machine.
 
 ## 🛠️ Installation & Setup
 
@@ -95,6 +88,8 @@ Add the following to your Claude CLI configuration file (`~/.claude/settings.jso
 }
 ```
 
+> When you run `claude` it will ask for login, use the console auth for login.
+
 ### For Opencode CLI
 
 Add the following to your Opencode CLI configuration file (`~/.config/opencode/opencode.json`):
@@ -118,9 +113,8 @@ Add the following to your Opencode CLI configuration file (`~/.config/opencode/o
 }
 ```
 
-### Start a Session
-
-Now, simply type `claude` to start a session using the Qwen backend.
+> When you run `opencode` it will ask for login, use the Zen auth for login.
+> After login, use `/connect` command and select litellm and enter dummy api key (`sk-xxx`) to connect.
 
 ## 🚨 Limitations & Considerations
 
@@ -169,7 +163,7 @@ This will restart the proxy container and refresh the token from your credential
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+Only use for personal and non-commercial purposes. Do not use for any illegal or unauthorized purpose.
 
 ## 🙏 Acknowledgments
 
