@@ -1,21 +1,17 @@
 model_list:
-  # for claude code models
+  # claude code settings
   - model_name: claude-*
     litellm_params:
       model: openai/qwen3-coder-plus
       api_base: "https://portal.qwen.ai/v1"
       api_key: os.environ/QWEN_API_KEY
-      extra_body:
-        enable_thinking: true
 
-  # for opencode models
-  - model_name: openai/qwen3-coder-plus
+  # opencode settings
+  - model_name: qwen3-coder-plus
     litellm_params:
-      model: openai/qwen3-coder-plus
+      model: dashscope/qwen3-coder-plus
       api_base: "https://portal.qwen.ai/v1"
       api_key: os.environ/QWEN_API_KEY
-      extra_body:
-        enable_thinking: true
 
 litellm_settings:
   drop_params: true
