@@ -9,10 +9,9 @@ model_list:
   # opencode settings
   - model_name: qwen3-coder-plus
     litellm_params:
-      model: dashscope/qwen3-coder-plus
+      model: openai/qwen3-coder-plus
       api_base: "https://portal.qwen.ai/v1"
       api_key: os.environ/QWEN_API_KEY
 
 litellm_settings:
   drop_params: true
-  request_timeout: 120
