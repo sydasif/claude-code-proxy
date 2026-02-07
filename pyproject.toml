@@ -1,7 +1,7 @@
 [project]
-name = "qwen-code-proxy"
+name = "proxy"
 version = "0.1.0"
-description = "Add your description here"
+description = "Qwen Code Proxy"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
